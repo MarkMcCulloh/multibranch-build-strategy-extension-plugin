@@ -25,5 +25,5 @@
 -->
 <div>
   This plugin provides addition configuration to prevent multi branch projects from triggering new builds
-  based on a include or exclude regions in source repository.
+  based on paths provided.
 </div>

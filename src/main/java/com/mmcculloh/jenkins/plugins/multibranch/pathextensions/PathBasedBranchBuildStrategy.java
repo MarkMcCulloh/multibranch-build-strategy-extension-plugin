@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package com.igalg.jenkins.plugins.multibranch.buildstrategy;
+package com.mmcculloh.jenkins.plugins.multibranch.pathextensions;
 
 import hudson.Extension;
 import hudson.scm.SCM;
@@ -41,9 +41,7 @@ import org.apache.tools.ant.types.selectors.SelectorUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 
 public class PathBasedBranchBuildStrategy extends BranchBuildStrategyExtension {
-  private static final Logger logger = Logger.getLogger(
-    PathBasedBranchBuildStrategy.class.getName()
-  );
+  private static final Logger logger = Logger.getLogger(PathBasedBranchBuildStrategy.class.getName());
   private final String includedRegions;
   private final String excludedRegions;
 
@@ -56,46 +54,32 @@ public class PathBasedBranchBuildStrategy extends BranchBuildStrategyExtension {
   }
 
   @DataBoundConstructor
-  public PathBasedBranchBuildStrategy(
-    String includedRegions,
-    String excludedRegions
-  ) {
+  public PathBasedBranchBuildStrategy(String includedRegions, String excludedRegions) {
     this.includedRegions = includedRegions;
     this.excludedRegions = excludedRegions;
   }
 
   /**
-   * Determine if build is required by checking if any of the commit affected files is in the include regions.
+   * Determine if build is required by checking if any of the commit affected
+   * files is in the include regions.
    *
-   * @return true if  there is at least one affected file in the include regions
+   * @return true if there is at least one affected file in the include regions
    */
   @Override
-  public boolean isAutomaticBuild(
-    SCMSource source,
-    SCMHead head,
-    SCMRevision currRevision,
-    SCMRevision prevRevision
-  ) {
+  public boolean isAutomaticBuild(SCMSource source, SCMHead head, SCMRevision currRevision, SCMRevision prevRevision) {
     try {
-      List<String> includedRegionsList = Arrays
-        .stream(includedRegions.split("\n"))
-        .map(e -> e.trim())
-        .collect(Collectors.toList());
+      List<String> includedRegionsList = Arrays.stream(includedRegions.split("\n")).map(e -> e.trim())
+          .collect(Collectors.toList());
 
-      List<String> excludedRegionsList = Arrays
-        .stream(excludedRegions.split("\n"))
-        .map(e -> e.trim())
-        .collect(Collectors.toList());
+      List<String> excludedRegionsList = Arrays.stream(excludedRegions.split("\n")).map(e -> e.trim())
+          .collect(Collectors.toList());
 
-      logger.info(
-        String.format("Included regions: %s", includedRegionsList.toString())
-      );
-      logger.info(
-        String.format("Excluded regions: %s", excludedRegionsList.toString())
-      );
+      logger.info(String.format("Included regions: %s", includedRegionsList.toString()));
+      logger.info(String.format("Excluded regions: %s", excludedRegionsList.toString()));
 
       // No regions included cancel the build
-      if (includedRegionsList.isEmpty()) return false;
+      if (includedRegionsList.isEmpty())
+        return false;
 
       // build SCM object
       SCM scm = source.build(head, currRevision);
@@ -108,23 +92,14 @@ public class PathBasedBranchBuildStrategy extends BranchBuildStrategyExtension {
       }
 
       // Build SCM file system
-      SCMFileSystem fileSystem = buildSCMFileSystem(
-        source,
-        head,
-        currRevision,
-        scm,
-        owner
-      );
+      SCMFileSystem fileSystem = buildSCMFileSystem(source, head, currRevision, scm, owner);
       if (fileSystem == null) {
         logger.severe("Error build SCM file system");
         return true;
       }
 
       List<String> pathList = new ArrayList<String>(
-        collectAllAffectedFiles(
-          getGitChangeSetListFromPrevious(fileSystem, head, prevRevision)
-        )
-      );
+          collectAllAffectedFiles(getGitChangeSetListFromPrevious(fileSystem, head, prevRevision)));
       // If there is match for at least one file run the build
       for (String filePath : pathList) {
         logger.info(String.format("Check File: %s", filePath));
@@ -133,7 +108,9 @@ public class PathBasedBranchBuildStrategy extends BranchBuildStrategyExtension {
             boolean isGood = true;
             for (String excludedRegion : excludedRegionsList) {
               if (SelectorUtils.matchPath(excludedRegion, filePath)) {
-                logger.info(String.format("Matched file also found in exclusion: included by %s excluded by %s with file path: %s", includedRegion, excludedRegion, filePath));
+                logger.info(String.format(
+                    "Matched file also found in exclusion: included by %s excluded by %s with file path: %s",
+                    includedRegion, excludedRegion, filePath));
                 isGood = false;
                 break;
               }
@@ -150,7 +127,7 @@ public class PathBasedBranchBuildStrategy extends BranchBuildStrategyExtension {
 
       return false;
     } catch (Exception e) {
-      //we don't want to cancel builds on unexpected exception
+      // we don't want to cancel builds on unexpected exception
       logger.log(Level.SEVERE, "Unexpected exception", e);
       return true;
     }

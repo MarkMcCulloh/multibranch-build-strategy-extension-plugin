@@ -120,18 +120,20 @@ public class PathBasedBranchBuildStrategy extends BranchBuildStrategyExtension {
         return true;
       }
 
-      List<String> pathesList = new ArrayList<String>(
+      List<String> pathList = new ArrayList<String>(
         collectAllAffectedFiles(
           getGitChangeSetListFromPrevious(fileSystem, head, prevRevision)
         )
       );
       // If there is match for at least one file run the build
-      for (String filePath : pathesList) {
+      for (String filePath : pathList) {
+        logger.info(String.format("Check File: %s", filePath));
         for (String includedRegion : includedRegionsList) {
           if (SelectorUtils.matchPath(includedRegion, filePath)) {
             boolean isGood = true;
             for (String excludedRegion : excludedRegionsList) {
               if (SelectorUtils.matchPath(excludedRegion, filePath)) {
+                logger.info(String.format("Matched file also found in exclusion: included by %s excluded by %s with file path: %s", includedRegion, excludedRegion, filePath));
                 isGood = false;
                 break;
               }
